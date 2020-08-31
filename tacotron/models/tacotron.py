@@ -58,9 +58,9 @@ class Tacotron():
 			post_condition = hp.predict_linear and not gta
 
 			# Embeddings ==> [batch_size, sequence_length, embedding_dim]
-			embedding_table = tf.get_variable(
-				'inputs_embedding', [len(symbols), hp.embedding_dim], dtype=tf.float32)
-			embedded_inputs = tf.nn.embedding_lookup(embedding_table, inputs)
+			# embedding_table = tf.get_variable(
+			# 	'inputs_embedding', [len(symbols), hp.embedding_dim], dtype=tf.float32)
+			# embedded_inputs = tf.nn.embedding_lookup(embedding_table, inputs)
 			
 			# Speaker Embeddings ==> [batch_size, embedding_dim]
 			self.speaker_id_embedding_table = tf.get_variable('input_speaker_id_embedding', [hp.speaker_num, hp.speaker_dim], dtype=tf.float32, initializer=tf.truncated_normal_initializer(stddev=0.5))
@@ -72,8 +72,9 @@ class Tacotron():
 				EncoderConvolutions(is_training, hparams=hp, scope='encoder_convolutions'),
 				EncoderRNN(is_training, size=hp.encoder_lstm_units,
 					zoneout=hp.tacotron_zoneout_rate, scope='encoder_LSTM'))
-
-			encoder_outputs = encoder_cell(embedded_inputs, input_lengths)
+			print('inputs:', inputs)
+			# inputs = tf.Print(inputs, [inputs], "inputs: ",summarize=9)
+			encoder_outputs = encoder_cell(inputs, input_lengths)
 			
 			#first change encoder_outputs to concated version.
 			
@@ -229,7 +230,7 @@ class Tacotron():
 			log('  Eval mode:                {}'.format(is_evaluating))
 			log('  GTA mode:                 {}'.format(gta))
 			log('  Synthesis mode:           {}'.format(not (is_training or is_evaluating)))
-			log('  embedding:                {}'.format(embedded_inputs.shape))
+			log('  embedding:                {}'.format(inputs.shape))
 			log('  enc conv out:             {}'.format(enc_conv_output_shape))
 			log('  encoder out:              {}'.format(encoder_outputs.shape))
 			log('  id encoder out:              {}'.format(id_encoder_outputs.shape))

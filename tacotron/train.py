@@ -12,7 +12,6 @@ from hparams import hparams_debug_string
 from tacotron.feeder import Feeder
 from tacotron.models import create_model
 from tacotron.utils import ValueWindow, plot
-from tacotron.utils.text import sequence_to_text
 from tqdm import tqdm
 
 log = infolog.log
@@ -211,6 +210,15 @@ def train(log_dir, args, hparams):
 							stop_token_losses.append(stop_token_loss)
 							attention_losses.append(attention_loss)
 							linear_losses.append(linear_loss)
+						
+
+
+							# 记得去掉
+							break
+
+
+
+
 						linear_loss = sum(linear_losses) / len(linear_losses)
 
 						wav = audio.inv_linear_spectrogram(lin_p.T, hparams)
@@ -234,7 +242,7 @@ def train(log_dir, args, hparams):
 
 					log('Saving eval log to {}..'.format(eval_dir))
 					# #Save some log to monitor model improvement on same unseen sequence
-					wav = audio.inv_mel_spectrogram(mel_p.T, hparams)
+					wav = audio.inv_mel_spectrogram_for_ppg_cbhg(mel_p.T, hparams)
 					audio.save_wav(wav, os.path.join(eval_wav_dir, 'step-{}-eval-waveform-mel.wav'.format(step)), hparams)
 
 					plot.plot_alignment(align, os.path.join(eval_plot_dir, 'step-{}-eval-align.png'.format(step)),
@@ -255,38 +263,53 @@ def train(log_dir, args, hparams):
 
 					log('\nSaving alignment, Mel-Spectrograms and griffin-lim inverted waveform..')
 					if hparams.predict_linear:
-						input_seq, mel_prediction, linear_prediction, alignment, target, target_length = sess.run([
+						input_seq, mel_prediction, linear_prediction, alignment, mel_target, linear_target, target_length = sess.run([
 							model.inputs[0],
 							model.mel_outputs[0],
 							model.linear_outputs[0],
 							model.alignments[0],
 							model.mel_targets[0],
+							model.linear_targets[0],
 							model.targets_lengths[0],
 							])
 
 						#save predicted linear spectrogram to disk (debug)
 						linear_filename = 'linear-prediction-step-{}.npy'.format(step)
 						np.save(os.path.join(linear_dir, linear_filename), linear_prediction.T, allow_pickle=False)
+						target_linear_filename = 'linear-prediction-step-{}_GT.npy'.format(step)
+						np.save(os.path.join(linear_dir, target_linear_filename), linear_target.T, allow_pickle=False)
+
 
 						#save griffin lim inverted wav for debug (linear -> wav)
 						wav = audio.inv_linear_spectrogram(linear_prediction.T, hparams)
 						audio.save_wav(wav, os.path.join(wav_dir, 'step-{}-wave-from-linear.wav'.format(step)), hparams)
+						target_wav = audio.inv_linear_spectrogram(linear_target.T, hparams)
+						audio.save_wav(target_wav, os.path.join(wav_dir, 'step-{}-wave-from-linear_GT.wav'.format(step)), hparams)
+						#save real and predicted linear-spectrogram plot to disk (control purposes)
+						plot.plot_spectrogram(linear_prediction, os.path.join(plot_dir, 'step-{}-linear-spectrogram.png'.format(step)),
+						info='{}, {}, step={}, loss={:.5}'.format(args.model, time_string(), step, loss), target_spectrogram=linear_target,
+						max_len=target_length)
 
-					else:
-						input_seq, mel_prediction, alignment, target, target_length = sess.run([model.inputs[0],
-							model.mel_outputs[0],
-							model.alignments[0],
-							model.mel_targets[0],
-							model.targets_lengths[0],
-							])
+					# else:
+					# 	input_seq, mel_prediction, alignment, target, target_length = sess.run([model.inputs[0],
+					# 		model.mel_outputs[0],
+					# 		model.alignments[0],
+					# 		model.mel_targets[0],
+					# 		model.targets_lengths[0],
+					# 		])
 
 					#save predicted mel spectrogram to disk (debug)
 					mel_filename = 'mel-prediction-step-{}.npy'.format(step)
 					np.save(os.path.join(mel_dir, mel_filename), mel_prediction.T, allow_pickle=False)
+					target_mel_filename = 'mel-prediction-step-{}_GT.npy'.format(step)
+					np.save(os.path.join(mel_dir, target_mel_filename), mel_target.T, allow_pickle=False)
+
 
 					#save griffin lim inverted wav for debug (mel -> wav)
-					wav = audio.inv_mel_spectrogram(mel_prediction.T, hparams)
+					wav = audio.inv_mel_spectrogram_for_ppg_cbhg(mel_prediction.T, hparams)
 					audio.save_wav(wav, os.path.join(wav_dir, 'step-{}-wave-from-mel.wav'.format(step)), hparams)
+					target_wav = audio.inv_mel_spectrogram_for_ppg_cbhg(mel_target.T, hparams)
+					audio.save_wav(target_wav, os.path.join(wav_dir, 'step-{}-wave-from-mel_GT.wav'.format(step)), hparams)
 
 					#save alignment plot to disk (control purposes)
 					plot.plot_alignment(alignment, os.path.join(plot_dir, 'step-{}-align.png'.format(step)),
@@ -294,9 +317,11 @@ def train(log_dir, args, hparams):
 						max_len=target_length // hparams.outputs_per_step)
 					#save real and predicted mel-spectrogram plot to disk (control purposes)
 					plot.plot_spectrogram(mel_prediction, os.path.join(plot_dir, 'step-{}-mel-spectrogram.png'.format(step)),
-						info='{}, {}, step={}, loss={:.5}'.format(args.model, time_string(), step, loss), target_spectrogram=target,
+						info='{}, {}, step={}, loss={:.5}'.format(args.model, time_string(), step, loss), target_spectrogram=mel_target,
 						max_len=target_length)
-					log('Input at step {}: {}'.format(step, sequence_to_text(input_seq)))
+					
+					plot.plot_ppg(input_seq, os.path.join(plot_dir, 'step-{}-PPG.png'.format(step)),
+						info='{}, {}, step={}, loss={:.5f}'.format(args.model, time_string(), step, loss))
 
 			log('Tacotron training complete after {} global steps!'.format(args.tacotron_train_steps), slack=True)
 			return save_dir

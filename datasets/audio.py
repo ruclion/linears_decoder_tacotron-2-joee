@@ -106,6 +106,25 @@ def inv_mel_spectrogram(mel_spectrogram, hparams):
 	else:
 		return inv_preemphasis(_griffin_lim(S ** hparams.power, hparams), hparams.preemphasis)
 
+def inv_mel_spectrogram_for_ppg_cbhg(mel_spectrogram, hparams):
+	'''Converts mel spectrogram to waveform using librosa'''
+	# ppg对应的特征提取的恢复：先平方取得power，再mel加权和，之后仅仅乘以10，和Rayhane本身的不同，所以单独写个逆过程
+	if hparams.signal_normalization:
+		D = _denormalize(mel_spectrogram, hparams)
+	else:
+		D = mel_spectrogram
+
+	S = _mel_to_linear(_db_to_amp_for_ppg_cbhg(D + hparams.ref_level_db), hparams)  # Convert back to linear
+	S = S ** 0.5
+
+	if hparams.use_lws:
+		processor = _lws_processor(hparams)
+		D = processor.run_lws(S.astype(np.float64).T ** hparams.power)
+		y = processor.istft(D).astype(np.float32)
+		return inv_preemphasis(y, hparams.preemphasis)
+	else:
+		return inv_preemphasis(_griffin_lim(S ** hparams.power, hparams), hparams.preemphasis)
+
 def inv_spectrogram_tensorflow(spectrogram, hparams):
 	'''Builds computational graph to convert spectrogram to waveform using TensorFlow.
 	Unlike inv_spectrogram, this does NOT invert the preemphasis. The caller should call
@@ -221,6 +240,10 @@ def _amp_to_db(x, hparams):
 
 def _db_to_amp(x):
 	return np.power(10.0, (x) * 0.05)
+
+def _db_to_amp_for_ppg_cbhg(x):
+	# 取mel加权和之后不再进行平方操作，所以倒推回去只用除以10
+	return np.power(10.0, (x) * 0.1)
 
 def _db_to_amp_tensorflow(x):
 	return tf.pow(tf.ones(tf.shape(x)) * 10.0, x * 0.05)

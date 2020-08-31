@@ -45,7 +45,7 @@ def main():
 	parser.add_argument('--base_dir', default='')
 	parser.add_argument('--hparams', default='',
 		help='Hyperparameter overrides as a comma-separated list of name=value pairs')
-	parser.add_argument('--tacotron_input', default='../zhaodan_1w_training_data/train.txt')
+	parser.add_argument('--tacotron_input', default='../PPG2MEL_DATA/LJSpeech-1.1_Norm_Sort/sorted_train.txt|../PPG2MEL_DATA/LJSpeech-1.1_Norm_Sort/sorted_test.txt')
 	parser.add_argument('--wavenet_input', default='tacotron_output/gta/map.txt')
 	parser.add_argument('--name', help='Name of logging directory.')
 	parser.add_argument('--model', default='Tacotron')
@@ -55,10 +55,13 @@ def main():
 	parser.add_argument('--GTA', default='True', help='Ground truth aligned synthesis, defaults to True, only considered in Tacotron synthesis mode')
 	parser.add_argument('--restore', type=bool, default=True, help='Set this to False to do a fresh training')
 	parser.add_argument('--summary_interval', type=int, default=500,
+	# parser.add_argument('--summary_interval', type=int, default=1,
 		help='Steps between running summary ops')
-	parser.add_argument('--checkpoint_interval', type=int, default=1000,
+	# parser.add_argument('--checkpoint_interval', type=int, default=2,
+	parser.add_argument('--checkpoint_interval', type=int, default=500,
 		help='Steps between writing checkpoints')
-	parser.add_argument('--eval_interval', type=int, default=1000,
+	# parser.add_argument('--eval_interval', type=int, default=10,
+	parser.add_argument('--eval_interval', type=int, default=500,
 		help='Steps between eval on test data')
 	parser.add_argument('--tacotron_train_steps', type=int, default=200000, help='total number of tacotron training steps')
 	parser.add_argument('--wavenet_train_steps', type=int, default=1300000, help='total number of wavenet training steps')

@@ -79,3 +79,26 @@ def plot_spectrogram(pred_spectrogram, path, info=None, split_title=False, targe
 	plt.tight_layout()
 	plt.savefig(path, format='png')
 	plt.close()
+
+def plot_ppg(ppg, path, info=None, split_title=False):
+	fig = plt.figure(figsize=(8, 6))
+	ax = fig.add_subplot(111)
+
+	im = ax.imshow(
+		ppg,
+		aspect='auto',
+		origin='lower',
+		interpolation='none')
+	fig.colorbar(im, ax=ax)
+	xlabel = 'Frame timestep'
+	if info is not None:
+		if split_title:
+			title = split_title_line(info)
+		else:
+			title = info
+	plt.xlabel(xlabel)
+	plt.title(title)
+	plt.ylabel('Senones dim')
+	plt.tight_layout()
+	plt.savefig(path, format='png')
+	plt.close()
