@@ -1,0 +1,2 @@
+这个超参数是r=5，hparams.py中bs=8，r=5，其他的一样，具体的代码在datapool中该文件夹平行的文件夹：linears_decoder_tacotron-2-joee_bs8_r5
+这个超参数很快跑出alignment，并且loss下降得还算稳定，可以作为参考

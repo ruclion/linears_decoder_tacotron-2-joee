@@ -1,0 +1,2 @@
+这个超参数是r=1，hparams.py中bs=2，r=1，其他的一样，具体的代码在datapool中该文件夹平行的文件夹：linears_decoder_tacotron-2-joee_bs2_r1
+这个超参数很慢跑出alignment，但是还是可以合成声音，只是loss下降得非常波动，因为bs太小了，但是由于r=1，所以也可以作为参考
